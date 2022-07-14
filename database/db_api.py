@@ -1,3 +1,7 @@
+import datetime as dt
+from pathlib import Path
+from shutil import copyfile
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
@@ -40,14 +44,48 @@ class DbApi:
                 sess.flush()
             sess.commit()
 
+    def select_files_and_output(
+        self,
+        location: tuple[float, ...] = (0, 0, 0),
+        distance_km: int | float = 1e10,
+        start_date: dt.datetime = dt.datetime(1900, 1, 1),
+        end_date: dt.datetime = dt.datetime(9999, 1, 1),
+        target_folder: str | Path = "/home/pavel/Pictures/temp",
+    ):
+        p = Path(target_folder)
+        if not p.is_dir():
+            p.mkdir()
+
+        with self.session.begin() as sess:
+            q = (
+                sess.query(Image.path)
+                .filter(
+                    Image.location.ST_DistanceSphere(
+                        f"POINTZ({location[0]} {location[1]} {location[2]})"
+                    )
+                    <= distance_km * 1000
+                )
+                .filter(Image.timestamp >= start_date)
+                .filter(Image.timestamp <= end_date)
+            )
+
+            res: list[str] = [i[0] for i in q.all()]
+
+        for pth in res:
+            fname = Path(pth).name
+            copyfile(str(pth), str(p / fname))
+
 
 if __name__ == "__main__":
-    import time
+    # import time
 
-    t = time.time()
-    p = PhotoPaths(("/media/storage/Photo",))
-    meta = MetadataExtractor(p)
+    # t = time.time()
+    # p = PhotoPaths(("/media/storage/Photo",))
+    # meta = MetadataExtractor(p)
+
+    # api = DbApi()
+    # api.add_photo_to_db(meta.metadata)
+    # print(f"Completed in {time.time() - t} seconds")
 
     api = DbApi()
-    api.add_photo_to_db(meta.metadata)
-    print(f"Completed in {time.time() - t} seconds")
+    res = api.select_files_and_output(location=(-31.95, 115.86, 0), distance_km=50)
