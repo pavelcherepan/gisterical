@@ -3,10 +3,10 @@ from pathlib import Path
 from dateutil import parser
 
 from exif import Image
-from attrs import define
+from attrs import define, field
 from loguru import logger
 
-from image_paths import PhotoPaths
+from core.image_paths import PhotoPaths
 
 
 @define
@@ -19,78 +19,77 @@ class RawCoordinates:
 
 
 @define
-class Coordinates:
-    latitude: float
-    longitude: float
-    altitude: float
+class PhotoData:
+    path: str
+    latitude: float = field(default=-999)
+    longitude: float = field(default=-999)
+    altitude: float = field(default=-999)
+    timestamp: dt.datetime = field(default=dt.datetime(1900, 1, 1))
+    gps_accuracy: float = field(default=-999)
+    photo_direction: float = field(default=-999)
+    camera_make: str = field(default="unknown device")
+    camera_model: str = field(default="unknown model")
 
 
-class PhotoMetadata:
+class MetadataExtractor:
     def __init__(self, image_paths: PhotoPaths):
         logger.info("Collecting metadata from image files.")
         self.paths: tuple[Path] = image_paths.photo_paths
 
     @property
-    def metadata(self) -> list[Image]:
-        metadata: list[Image] = []
+    def _raw_metadata(self) -> dict[str, Image]:
+        data: dict[str, Image] = {}
         for p in self.paths:
             with open(p, "rb") as f:
-                metadata.append(Image(f))
-        return metadata
+                data[str(p)] = Image(f)
+        return data
 
     @property
-    def _raw_coords(self) -> list[RawCoordinates]:
-        res: list[RawCoordinates] = []
-        for img in self.metadata:
-            lat = img["gps_latitude"]
-            lon = img["gps_longitude"]
-            alt = img["gps_altitude"]
-            lat_ref = img["gps_latitude_ref"]
-            lon_ref = img["gps_longitude_ref"]
+    def metadata(self) -> list[PhotoData]:
+        res: list[PhotoData] = []
+        for pth, img in self._raw_metadata.items():
+            try:
+                lat = self._convert_coords_to_decimal(img.gps_latitude, img.gps_latitude_ref)
+                lon = self._convert_coords_to_decimal(img.gps_longitude, img.gps_longitude_ref)
+                alt = img.gps_altitude
+            except (AttributeError, KeyError):
+                lat = lon = alt = -999
+
+            try:
+                timestamp = parser.parse(img.datetime, dayfirst=True, fuzzy=True)
+            except (AttributeError, KeyError):
+                timestamp = dt.datetime(1900, 1, 1)
+
+            try:
+                gps_accuracy = img.gps_horizontal_positioning_error
+            except (AttributeError, KeyError):
+                gps_accuracy = -999
+
+            try:
+                photo_direction = img.gps_img_direction
+            except (AttributeError, KeyError):
+                photo_direction = -999
+
+            try:
+                camera_make = img.make
+                camera_model = img.model
+            except (AttributeError, KeyError):
+                camera_make = "unknown device"
+                camera_model = "unknown model"
             res.append(
-                RawCoordinates(
+                PhotoData(
+                    path=pth,
                     latitude=lat,
                     longitude=lon,
                     altitude=alt,
-                    latitude_ref=lat_ref,
-                    longitude_ref=lon_ref,
+                    timestamp=timestamp,
+                    gps_accuracy=gps_accuracy,
+                    photo_direction=photo_direction,
+                    camera_make=camera_make,
+                    camera_model=camera_model,
                 )
             )
         return res
-
-    @property
-    def coords(self) -> list[Coordinates]:
-        logger.info("Parsing coordinates and converting to decimal format.")
-        coords: list[Coordinates] = []
-        for c in self._raw_coords:
-            lat = self._convert_coords_to_decimal(c.latitude, c.latitude_ref)
-            lon = self._convert_coords_to_decimal(c.longitude, c.longitude_ref)
-            coords.append(Coordinates(latitude=lat, longitude=lon, altitude=c.altitude))
-        return coords
-
-    @property
-    def gps_accuracy(self) -> list[float]:
-        logger.info("Extracting GPS accuracy data.")
-        return [img.gps_horizontal_positioning_error for img in self.metadata]
-
-    @property
-    def photo_direction(self):
-        pass
-
-    @property
-    def timestamp(self) -> list[dt.datetime]:
-        logger.info("Parsing image timestamps.")
-        return [parser.parse(img.datetime, dayfirst=True, fuzzy=True) for img in self.metadata]
-
-    @property
-    def make(self) -> list[str]:
-        logger.info("Extracting camera make.")
-        return [img.make for img in self.metadata]
-
-    @property
-    def model(self) -> list[str]:
-        logger.info("Extracting camera model.")
-        return [img.model for img in self.metadata]
 
     def _convert_coords_to_decimal(self, coords: tuple[float, ...], ref: str) -> float:
         """Covert a tuple of coordinates in the format (degrees, minutes, seconds)
@@ -112,3 +111,16 @@ class PhotoMetadata:
             logger.debug(msg)
             raise ValueError(msg)
         return mul * (coords[0] + coords[1] / 60 + coords[2] / 3600)
+
+
+if __name__ == "__main__":
+    import sys
+    import time
+
+    t = time.time()
+    p = PhotoPaths(("/media/storage/Photo",))
+    meta = MetadataExtractor(p)
+    r = meta.metadata
+    elapsed = time.time() - t
+
+    print(f"Length: {len(r)} -- Memory: {sys.getsizeof(r)} -- Elapsed: {elapsed}")

@@ -12,8 +12,12 @@ from sqlalchemy import (
     create_engine,
 )
 
+from settings.settings import load_settings
+
+SETTINGS = load_settings()
+
 Base = declarative_base()
-engine = create_engine("postgresql+psycopg2://gis:gis@localhost/photo")
+engine = create_engine(SETTINGS.conn_str)
 
 
 image_objects = Table(
@@ -30,10 +34,10 @@ class Image(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     path = Column(String)
-    location = Column(Geometry("POINT"))
+    location = Column(Geometry("POINTZ"))
     timestamp = Column(DateTime)
     gps_accuracy = Column(Float)
-    photo_direction = Column(String)
+    photo_direction = Column(Float)
     device_make = Column(String)
     device_model = Column(String)
 
@@ -46,7 +50,9 @@ class Object(Base):
     __tablename__ = "object"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    saved_data = Column(String)
+    object_type = Column(String)
+    object_name = Column(String)
+    object_path = Column(String)
 
 
 def main():

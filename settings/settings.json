@@ -1,0 +1,3 @@
+{
+    "conn_str": "postgresql+psycopg2://gis:gis@localhost/photo"
+}
