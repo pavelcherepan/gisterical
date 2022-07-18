@@ -1,3 +1,5 @@
 {
-    "conn_str": "postgresql+psycopg2://gis:gis@localhost/photo"
+    "conn_str": "postgresql+psycopg2://gis:gis@localhost/photo",
+    "cities_data": "data/worldcities.csv",
+    "countries_data": "data/countries.geojson"
 }

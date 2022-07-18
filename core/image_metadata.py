@@ -1,40 +1,37 @@
+import time
 import datetime as dt
 from pathlib import Path
 from dateutil import parser
 
+from PIL import Image as PILImage
 from exif import Image
-from attrs import define, field
+import imagehash as imh
+from attrs import define
 from loguru import logger
 
-from core.image_paths import PhotoPaths
-
-
-@define
-class RawCoordinates:
-    latitude: tuple[int, int, int]
-    latitude_ref: str
-    longitude: tuple[int, int, int]
-    longitude_ref: str
-    altitude: float
+from core.image_paths import get_paths
 
 
 @define
 class PhotoData:
     path: str
-    latitude: float = field(default=-999)
-    longitude: float = field(default=-999)
-    altitude: float = field(default=-999)
-    timestamp: dt.datetime = field(default=dt.datetime(1900, 1, 1))
-    gps_accuracy: float = field(default=-999)
-    photo_direction: float = field(default=-999)
-    camera_make: str = field(default="unknown device")
-    camera_model: str = field(default="unknown model")
+    latitude: float
+    longitude: float
+    altitude: float
+    timestamp: dt.datetime
+    gps_accuracy: float
+    photo_direction: float
+    camera_make: str
+    camera_model: str
+    phash: str | None = None
+    colorhash: str | None = None
 
 
 class MetadataExtractor:
-    def __init__(self, image_paths: PhotoPaths):
+    def __init__(self, image_paths: tuple[Path], hash_images: bool = False):
         logger.info("Collecting metadata from image files.")
-        self.paths: tuple[Path] = image_paths.photo_paths
+        self.paths: tuple[Path] = image_paths
+        self.__hash_images = hash_images
 
     @property
     def _raw_metadata(self) -> dict[str, Image]:
@@ -47,7 +44,8 @@ class MetadataExtractor:
     @property
     def metadata(self) -> list[PhotoData]:
         res: list[PhotoData] = []
-        for pth, img in self._raw_metadata.items():
+        for cnt, (pth, img) in enumerate(self._raw_metadata.items(), start=1):
+            logger.info(f"Processing image {cnt}/{len(self._raw_metadata)}")
             try:
                 lat = self._convert_coords_to_decimal(img.gps_latitude, img.gps_latitude_ref)
                 lon = self._convert_coords_to_decimal(img.gps_longitude, img.gps_longitude_ref)
@@ -76,6 +74,17 @@ class MetadataExtractor:
             except (AttributeError, KeyError):
                 camera_make = "unknown device"
                 camera_model = "unknown model"
+
+            if self.__hash_images:
+                logger.debug("Calculating image hashes.")
+                t = time.time()
+                im = PILImage.open(str(pth))
+                phash = str(imh.phash(im))
+                chash = str(imh.colorhash(im))
+                print(f"Hashing image took {time.time() - t} seconds")
+            else:
+                phash = chash = None
+
             res.append(
                 PhotoData(
                     path=pth,
@@ -87,6 +96,8 @@ class MetadataExtractor:
                     photo_direction=photo_direction,
                     camera_make=camera_make,
                     camera_model=camera_model,
+                    phash=phash,
+                    colorhash=chash,
                 )
             )
         return res
@@ -118,8 +129,8 @@ if __name__ == "__main__":
     import time
 
     t = time.time()
-    p = PhotoPaths(("/media/storage/Photo",))
-    meta = MetadataExtractor(p)
+    p = get_paths(("/media/storage/Photo",))
+    meta = MetadataExtractor(p, hash_images=True)
     r = meta.metadata
     elapsed = time.time() - t
 

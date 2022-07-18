@@ -2,13 +2,13 @@ import datetime as dt
 from pathlib import Path
 from shutil import copyfile
 
+from loguru import logger
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from database.schema import Image
-from core.image_metadata import PhotoData, MetadataExtractor
-from core.image_paths import PhotoPaths
+from core.image_metadata import PhotoData
 from settings.settings import load_settings
 
 
@@ -21,6 +21,7 @@ class DbApi:
     session = sessionmaker(engine)
 
     def add_photo_to_db(self, data: list[PhotoData]):
+        logger.debug(f"Adding {len(data)} files to the database.")
         with self.session.begin() as sess:
             for d in data:
                 if -999 not in {d.latitude, d.longitude, d.altitude}:
@@ -38,11 +39,14 @@ class DbApi:
                     photo_direction=direction,
                     device_make=d.camera_make,
                     device_model=d.camera_model,
+                    phash=d.phash,
+                    colorhash=d.colorhash,
                 )
 
                 sess.add(new_result)
                 sess.flush()
             sess.commit()
+        logger.debug("Successfully added!")
 
     def select_files_and_output(
         self,
@@ -52,6 +56,11 @@ class DbApi:
         end_date: dt.datetime = dt.datetime(9999, 1, 1),
         target_folder: str | Path = "/home/pavel/Pictures/temp",
     ):
+        logger.info(
+            f"Searching for images within {distance_km} kilometers "
+            f"from coordinates {location} between {start_date} "
+            f"and {end_date}."
+        )
         p = Path(target_folder)
         if not p.is_dir():
             p.mkdir()
@@ -70,14 +79,18 @@ class DbApi:
             )
 
             res: list[str] = [i[0] for i in q.all()]
+            logger.info(f"{len(res)} files found. Copying the files to {target_folder}.")
 
         for pth in res:
             fname = Path(pth).name
             copyfile(str(pth), str(p / fname))
+        logger.info("Success!")
 
 
 if __name__ == "__main__":
     # import time
+    # from core.image_paths import PhotoPaths
+    # from core.image_metadata import MetadataExtractor
 
     # t = time.time()
     # p = PhotoPaths(("/media/storage/Photo",))

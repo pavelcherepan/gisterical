@@ -1,5 +1,8 @@
+import json
+from pathlib import Path
+
 from geoalchemy2 import Geometry
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -40,6 +43,8 @@ class Image(Base):
     photo_direction = Column(Float)
     device_make = Column(String)
     device_model = Column(String)
+    phash = Column(String)
+    colorhash = Column(String)
 
     objects = relationship("Object", secondary=image_objects)
 
@@ -55,8 +60,78 @@ class Object(Base):
     object_path = Column(String)
 
 
+class Country(Base):
+    __tablename__ = "country"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    iso_code = Column(String)
+    geometry = Column(Geometry)
+
+
+class City(Base):
+    __tablename__ = "city"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    country = Column(String)
+    location = Column(Geometry("POINT"))
+    population = Column(Integer)
+
+
+def populate_cities(session: sessionmaker):
+    cities = Path(SETTINGS.cities_data)
+    with open(cities, "r") as f:
+        with session.begin() as sess:
+            for idx, row in enumerate(f.readlines()):
+                r = row.split(",")
+                print(r)
+                print("Stripped: ", r[2].strip(), r[3].strip())
+
+                try:
+                    pop = int(r[9].replace('"', ""))
+                except (TypeError, ValueError):
+                    pop = None
+
+                try:
+                    lat = float(r[2].replace('"', ""))
+                    lon = float(r[3].replace('"', ""))
+                    loc = f"POINT({lat} {lon})"
+                except (TypeError, ValueError):
+                    loc = None
+
+                if idx >= 1:
+                    new_city = City(
+                        name=r[0],
+                        country=r[4],
+                        location=loc,
+                        population=pop,
+                    )
+                    sess.add(new_city)
+                    sess.flush()
+            sess.commit()
+
+
+def populate_countries(session: sessionmaker):
+    with open(SETTINGS.countries_data) as f:
+        cnt = json.load(f)
+    ft = cnt["features"]
+    with session.begin() as sess:
+        for f in ft:
+            new_cnt = Country(
+                name=f["properties"]["ADMIN"],
+                iso_code=f["properties"]["ISO_A3"],
+                geometry=json.dumps(f["geometry"]),
+            )
+            sess.add(new_cnt)
+        sess.commit()
+
+
 def main():
+    session = sessionmaker(engine)
     Base.metadata.create_all(engine)
+    populate_cities(session)
+    populate_countries(session)
 
 
 if __name__ == "__main__":
