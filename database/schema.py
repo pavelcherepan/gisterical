@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from loguru import logger
 from geoalchemy2 import Geometry
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from sqlalchemy import (
@@ -80,14 +81,12 @@ class City(Base):
 
 
 def populate_cities(session: sessionmaker):
+    logger.info("Adding coordinates for world cities.")
     cities = Path(SETTINGS.cities_data)
     with open(cities, "r") as f:
         with session.begin() as sess:
             for idx, row in enumerate(f.readlines()):
                 r = row.split(",")
-                print(r)
-                print("Stripped: ", r[2].strip(), r[3].strip())
-
                 try:
                     pop = int(r[9].replace('"', ""))
                 except (TypeError, ValueError):
@@ -96,7 +95,7 @@ def populate_cities(session: sessionmaker):
                 try:
                     lat = float(r[2].replace('"', ""))
                     lon = float(r[3].replace('"', ""))
-                    loc = f"POINT({lat} {lon})"
+                    loc = f"POINT({lon} {lat})"
                 except (TypeError, ValueError):
                     loc = None
 
@@ -113,6 +112,7 @@ def populate_cities(session: sessionmaker):
 
 
 def populate_countries(session: sessionmaker):
+    logger.info("Adding country boundaries.")
     with open(SETTINGS.countries_data) as f:
         cnt = json.load(f)
     ft = cnt["features"]
@@ -127,7 +127,7 @@ def populate_countries(session: sessionmaker):
         sess.commit()
 
 
-def main():
+def create_schema():
     session = sessionmaker(engine)
     Base.metadata.create_all(engine)
     populate_cities(session)
@@ -135,4 +135,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    create_schema()

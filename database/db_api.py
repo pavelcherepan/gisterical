@@ -25,7 +25,7 @@ class DbApi:
         with self.session.begin() as sess:
             for d in data:
                 if -999 not in {d.latitude, d.longitude, d.altitude}:
-                    loc = f"POINTZ({d.latitude} {d.longitude} {d.altitude})"
+                    loc = f"POINTZ({d.longitude} {d.latitude} {d.altitude})"
                 else:
                     loc = None
                 acc = d.gps_accuracy if d.gps_accuracy != -999 else None
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     # from core.image_metadata import MetadataExtractor
 
     # t = time.time()
-    # p = PhotoPaths(("/media/storage/Photo",))
+    # p = PhotoPaths(["/media/storage/Photo"])
     # meta = MetadataExtractor(p)
 
     # api = DbApi()

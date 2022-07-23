@@ -8,8 +8,10 @@ from exif import Image
 import imagehash as imh
 from attrs import define
 from loguru import logger
+from sqlalchemy import func
 
 from core.image_paths import get_paths
+from util.decorators import func_time
 
 
 @define
@@ -33,6 +35,7 @@ class MetadataExtractor:
         self.paths: tuple[Path] = image_paths
         self.__hash_images = hash_images
 
+    @func_time
     @property
     def _raw_metadata(self) -> dict[str, Image]:
         data: dict[str, Image] = {}
@@ -41,6 +44,7 @@ class MetadataExtractor:
                 data[str(p)] = Image(f)
         return data
 
+    @func_time
     @property
     def metadata(self) -> list[PhotoData]:
         res: list[PhotoData] = []
@@ -102,6 +106,7 @@ class MetadataExtractor:
             )
         return res
 
+    @func_time
     def _convert_coords_to_decimal(self, coords: tuple[float, ...], ref: str) -> float:
         """Covert a tuple of coordinates in the format (degrees, minutes, seconds)
         and a reference to a decimal representation.
@@ -129,7 +134,7 @@ if __name__ == "__main__":
     import time
 
     t = time.time()
-    p = get_paths(("/media/storage/Photo",))
+    p = get_paths(["/media/storage/Photo"])
     meta = MetadataExtractor(p, hash_images=True)
     r = meta.metadata
     elapsed = time.time() - t
