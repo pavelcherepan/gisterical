@@ -6,13 +6,7 @@ from pathlib import Path
 from shutil import copyfile
 from dataclasses import dataclass, field
 
-
-@dataclass
-class FileMeta:
-    path: str | Path
-    date: dt.datetime
-    country: str
-    city: str
+from util.file_meta import FileMeta
 
 
 def filter_year(data: list[FileMeta]) -> set[int]:
@@ -69,9 +63,9 @@ class Node:
             elif current_condition == "d":
                 children_data[str(f)]["metadata"] = [i for i in self.metadata if i.date.day == f]
             elif current_condition == "C":
-                children_data[str(f)]["metadata"] = [i for i in self.metadata if i.country == f]
+                children_data[str(f)]["metadata"] = [i if i else "Unknown_country" for i in self.metadata if i.country == f]
             elif current_condition == "c":
-                children_data[str(f)]["metadata"] = [i for i in self.metadata if i.city == f]
+                children_data[str(f)]["metadata"] = [i if i else "Unknown_city" for i in self.metadata if i.city == f]
 
         return [Node(**i) for i in children_data.values()]
 
@@ -126,30 +120,19 @@ def move_files(files: dict[Path, list[str]]):
 
 
 if __name__ == "__main__":
-    COND = ["Y", "m", "C"]
+    
+    from database.db_api import DbApi
+    COND = ["Y", "m", ]
 
-    # d - 2d list in form [[fname, date, country, city]]
-    d = [
-        ("/media/storage/Photo/Photo/Phone/IMAG0036.jpg", dt.datetime(2019, 1, 1), "Aus", "Bri"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0037.jpg", dt.datetime(2019, 1, 5), "Aus", "Bri"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0038.jpg", dt.datetime(2019, 2, 10), "Aus", "Mel"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0039.jpg", dt.datetime(2020, 1, 1), "Aus", "Per"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0042.jpg", dt.datetime(2020, 1, 10), "Aus", "Per"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0043.jpg", dt.datetime(2020, 1, 25), "Aus", "Per"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0046.jpg", dt.datetime(2020, 10, 5), "My", "KL"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0047.jpg", dt.datetime(2020, 11, 6), "Ru", "Led"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0048.jpg", dt.datetime(2020, 12, 1), "Ru", "Mos"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0050.jpg", dt.datetime(2021, 3, 5), "Aus", "Syd"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0051.jpg", dt.datetime(2021, 5, 1), "Aus", "Mel"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0052.jpg", dt.datetime(2021, 6, 1), "Aus", "Per"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0053.jpg", dt.datetime(2021, 11, 1), "Chi", "Bei"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0055.jpg", dt.datetime(2021, 11, 15), "Jp", "Tok"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0076.jpg", dt.datetime(2022, 1, 1), "Aus", "Per"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0078.jpg", dt.datetime(2022, 3, 1), "Aus", "Bri"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0079.jpg", dt.datetime(2022, 3, 5), "Aus", "Per"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0080.jpg", dt.datetime(2022, 3, 11), "My", "KL"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0095.jpg", dt.datetime(2022, 5, 1), "Aus", "Syd"),
-        ("/media/storage/Photo/Photo/Phone/IMAG0096.jpg", dt.datetime(2022, 8, 8), "Aus", "Bri"),
-    ]
+    api = DbApi()
+    d = api.get_photo_path_date()
+    
+    n = Node(Path('temp'), metadata=d, conditions=COND)
+    
+    tree = traverse(n)
+    
+    for leaf in tree:
+        make_folder(leaf)
+        
+    move_files(tree)
 
-    data = [FileMeta(*i) for i in d]

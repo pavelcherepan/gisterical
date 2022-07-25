@@ -87,6 +87,17 @@ def populate_cities(session: sessionmaker):
         with session.begin() as sess:
             for idx, row in enumerate(f.readlines()):
                 r = row.split(",")
+                
+                try:
+                    city = r[0].replace('"', "")
+                except (TypeError, ValueError):
+                    city = None
+                    
+                try:
+                    country = r[4].replace('"', "")
+                except (TypeError, ValueError):
+                    country = None
+                
                 try:
                     pop = int(r[9].replace('"', ""))
                 except (TypeError, ValueError):
@@ -101,8 +112,8 @@ def populate_cities(session: sessionmaker):
 
                 if idx >= 1:
                     new_city = City(
-                        name=r[0],
-                        country=r[4],
+                        name=city,
+                        country=country,
                         location=loc,
                         population=pop,
                     )

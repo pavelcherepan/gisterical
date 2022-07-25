@@ -1,7 +1,6 @@
 import time
 import datetime as dt
 from pathlib import Path
-from dateutil import parser
 
 from PIL import Image as PILImage
 from exif import Image
@@ -34,17 +33,15 @@ class MetadataExtractor:
         logger.info("Collecting metadata from image files.")
         self.paths: tuple[Path] = image_paths
         self.__hash_images = hash_images
+        self._raw_metadata = self.__raw_metadata()
 
-    @func_time
-    @property
-    def _raw_metadata(self) -> dict[str, Image]:
+    def __raw_metadata(self) -> dict[str, Image]:
         data: dict[str, Image] = {}
         for p in self.paths:
             with open(p, "rb") as f:
                 data[str(p)] = Image(f)
         return data
 
-    @func_time
     @property
     def metadata(self) -> list[PhotoData]:
         res: list[PhotoData] = []
@@ -57,8 +54,8 @@ class MetadataExtractor:
             except (AttributeError, KeyError):
                 lat = lon = alt = -999
 
-            try:
-                timestamp = parser.parse(img.datetime, dayfirst=True, fuzzy=True)
+            try:                
+                timestamp = dt.datetime.strptime(img.datetime_original, "%Y:%m:%d %H:%M:%S")
             except (AttributeError, KeyError):
                 timestamp = dt.datetime(1900, 1, 1)
 
@@ -106,7 +103,6 @@ class MetadataExtractor:
             )
         return res
 
-    @func_time
     def _convert_coords_to_decimal(self, coords: tuple[float, ...], ref: str) -> float:
         """Covert a tuple of coordinates in the format (degrees, minutes, seconds)
         and a reference to a decimal representation.

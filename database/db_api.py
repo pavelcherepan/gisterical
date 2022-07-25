@@ -7,9 +7,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-from database.schema import Image
+from database.schema import Image, Country, City
 from core.image_metadata import PhotoData
 from settings.settings import load_settings
+from util.file_meta import FileMeta
 
 
 SETTINGS = load_settings()
@@ -85,7 +86,37 @@ class DbApi:
             fname = Path(pth).name
             copyfile(str(pth), str(p / fname))
         logger.info("Success!")
-
+        
+    def get_photos_by_city(self, distance_km: int):
+        logger.info('Querying images with nearest city data.')        
+        with self.session.begin() as sess:
+            q = sess.query(Image.path, Image.timestamp, City.name).distinct(Image.path).\
+                join(City, Image.location.ST_DWithin(City.location, distance_km * 1000, True)).\
+                    order_by(Image.path, City.population.desc()).all()
+        return [FileMeta(path=Path(i[0]), date=i[1], city=i[2]) for i in q]
+    
+    def get_photo_path_date(self):
+        logger.info("Querying photo datetime information")
+        with self.session.begin() as sess:
+            q = sess.query(Image.path, Image.timestamp).all()
+            return [FileMeta(path=Path(i[0]), date=i[1]) for i in q]        
+        
+    def get_photo_city_country(self, distance_km: int):
+        logger.info('Querying images with nearest city and country information.')
+        with self.session.begin() as sess:
+            q = sess.query(Image.path, Image.timestamp, Country.name, City.name).distinct(Image.path).\
+                join(City, Image.location.ST_DWithin(City.location, distance_km * 1000, True)).\
+                join(Country, Country.geometry.ST_Contains(Image.location)).\
+                    order_by(Image.path, City.population.desc()).all()    
+        return [FileMeta(path=Path(i[0]), date=i[1], country=i[2], city=i[3]) for i in q]
+                    
+    def get_photo_country(self):
+        logger.info('Querying images with country information.')
+        with self.session.begin() as sess:
+            q = sess.query(Image.path, Image.timestamp, Country.name).\
+                join(Country, Country.geometry.ST_Contains(Image.location)).all()
+        return [FileMeta(path=Path(i[0]), date=i[1], country=i[2]) for i in q]            
+     
 
 if __name__ == "__main__":
     # import time
@@ -101,4 +132,6 @@ if __name__ == "__main__":
     # print(f"Completed in {time.time() - t} seconds")
 
     api = DbApi()
-    res = api.select_files_and_output(location=(-31.95, 115.86, 0), distance_km=50)
+    # res = api.select_files_and_output(location=(-31.95, 115.86, 0), distance_km=50)
+    res = api.get_photo_country()
+    print(res)
