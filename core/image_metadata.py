@@ -1,16 +1,16 @@
+import os
 import time
 import datetime as dt
 from pathlib import Path
+from typing import Any
 
 from PIL import Image as PILImage
 from exif import Image
 import imagehash as imh
 from attrs import define
 from loguru import logger
-from sqlalchemy import func
 
 from core.image_paths import get_paths
-from util.decorators import func_time
 
 
 @define
@@ -35,46 +35,89 @@ class MetadataExtractor:
         self.__hash_images = hash_images
         self._raw_metadata = self.__raw_metadata()
 
-    def __raw_metadata(self) -> dict[str, Image]:
-        data: dict[str, Image] = {}
+    def __raw_metadata(self) -> dict[str, dict[str, Any]]:
+        # this is bloody ugly but I' building the dict instead of
+        # using Image object because the latter eats too much memory
+        # and has caused crashes in the past. With this memory 
+        # issues are solved.
+        data: dict[str, dict[str, Any]] = {}
         for p in self.paths:
             with open(p, "rb") as f:
-                data[str(p)] = Image(f)
+                tmp = Image(f)
+                try:
+                    lat = tmp.get('gps_latitude')
+                    lat_ref = tmp.get('gps_latitude_ref')
+                    lon = tmp.get('gps_longitude')
+                    lon_ref = tmp.get('gps_longitude_ref')
+                    alt = tmp.get('gps_altitude')
+                except (AttributeError, KeyError):
+                    lat = lon = alt = None
+                    lat_ref = lon_ref = None
+                    
+                try:
+                    date = tmp.get('datetime_original') or '1900:1:1 00:00:00'
+                except (AttributeError, KeyError):
+                    date = '1900:1:1 00:00:00'
+                    
+                try:
+                    hor_pos = tmp.get('gps_horizontal_positioning_error')
+                    direct = tmp.get('gps_img_direction')
+                except (AttributeError, KeyError):
+                    hor_pos = direct = -999
+                    
+                try:
+                    mk = tmp.get('make')
+                    mod = tmp.get('model') 
+                except (AttributeError, KeyError):
+                    mk = "unknown device"
+                    mod = "unknown model"
+                
+                
+                data[str(p)] = {'gps_latitude': lat,
+                    'gps_latitude_ref': lat_ref,
+                    'gps_longitude': lon,
+                    'gps_longitude_ref': lon_ref,
+                    'gps_altitude': alt,
+                    'datetime_original': date,
+                    'gps_horizontal_positioning_error': hor_pos,
+                    'gps_img_direction': direct,
+                    'make': mk,
+                    'model': mod                 
+                }
         return data
 
     @property
     def metadata(self) -> list[PhotoData]:
         res: list[PhotoData] = []
-        for cnt, (pth, img) in enumerate(self._raw_metadata.items(), start=1):
+        for cnt, (pth, dic) in enumerate(self._raw_metadata.items(), start=1):
             logger.info(f"Processing image {cnt}/{len(self._raw_metadata)}")
             try:
-                lat = self._convert_coords_to_decimal(img.gps_latitude, img.gps_latitude_ref)
-                lon = self._convert_coords_to_decimal(img.gps_longitude, img.gps_longitude_ref)
-                alt = img.gps_altitude
+                lat = self._convert_coords_to_decimal(dic['gps_latitude'], dic['gps_latitude_ref'])
+                lon = self._convert_coords_to_decimal(dic['gps_longitude'], dic['gps_longitude_ref'])
+                alt = dic['gps_altitude']
             except (AttributeError, KeyError):
                 lat = lon = alt = -999
 
+            # when getting dates so images (like those sent through WhataApp, Telegram etc)
+            # won't have correct date recorded so instead we take the last modified date
+            # and select it instead            
             try:                
-                timestamp = dt.datetime.strptime(img.datetime_original, "%Y:%m:%d %H:%M:%S")
-            except (AttributeError, KeyError):
-                timestamp = dt.datetime(1900, 1, 1)
+                timestamp = dt.datetime.strptime(dic['datetime_original'], "%Y:%m:%d %H:%M:%S")
+            except (AttributeError, KeyError, ValueError):
+                ts = os.path.getmtime(pth)
+                timestamp = dt.datetime.utcfromtimestamp(ts)
+            else:
+                # if the image has datetime recorded we check whether it is in the future
+                # (due to incorrect camera setup and such) or whether it is before 1/1/1970
+                # and if either of these is true then we take modified date still
+                if timestamp > dt.datetime.now() or timestamp < dt.datetime(1970, 1, 1):
+                    ts = os.path.getmtime(pth)
+                    timestamp = dt.datetime.utcfromtimestamp(ts)                
 
-            try:
-                gps_accuracy = img.gps_horizontal_positioning_error
-            except (AttributeError, KeyError):
-                gps_accuracy = -999
-
-            try:
-                photo_direction = img.gps_img_direction
-            except (AttributeError, KeyError):
-                photo_direction = -999
-
-            try:
-                camera_make = img.make
-                camera_model = img.model
-            except (AttributeError, KeyError):
-                camera_make = "unknown device"
-                camera_model = "unknown model"
+            gps_accuracy = dic['gps_horizontal_positioning_error']
+            photo_direction = dic['gps_img_direction']
+            camera_make = dic['make']
+            camera_model = dic['model']
 
             if self.__hash_images:
                 logger.debug("Calculating image hashes.")

@@ -1,5 +1,8 @@
 {
-    "conn_str": "postgresql+psycopg2://gis:gis@localhost/photo",
+    "database_name": "photo",
+    "user": "gis",
+    "password": "gis",
+    "hostname": "localhost",
     "cities_data": "data/worldcities.csv",
     "countries_data": "data/countries.geojson"
 }

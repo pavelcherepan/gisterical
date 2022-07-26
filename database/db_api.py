@@ -115,7 +115,27 @@ class DbApi:
         with self.session.begin() as sess:
             q = sess.query(Image.path, Image.timestamp, Country.name).\
                 join(Country, Country.geometry.ST_Contains(Image.location)).all()
-        return [FileMeta(path=Path(i[0]), date=i[1], country=i[2]) for i in q]            
+        return [FileMeta(path=Path(i[0]), date=i[1], country=i[2]) for i in q]   
+    
+    def get_photo_no_location(self):
+        with self.session.begin() as sess:
+            q = sess.query(Image.path, Image.timestamp).\
+                filter(Image.location==None).all()
+        return [FileMeta(path=Path(i[0]), date=i[1], country="Uknown", city="Unknown") for i in q]
+    
+    def find_photos_by_city_name(self, distance_km: int, name: str) -> list[Path]:
+        with self.session.begin() as sess:
+            q: list[tuple[str]] = sess.query(Image.path)\
+                .join(City, Image.location.ST_DWithin(City.location, distance_km * 1000, True))\
+                    .filter(City.name == name).all()
+        return [Path(i[0]) for i in q]
+    
+    def find_photos_by_country_name(self, name: str) -> list[Path]:
+        with self.session.begin() as sess:
+            q = sess.query(Image.path)\
+                .join(Country, Country.geometry.ST_Contains(Image.location))\
+                    .filter(Country.name == name)
+        return [Path(i[0]) for i in q]
      
 
 if __name__ == "__main__":
@@ -133,5 +153,7 @@ if __name__ == "__main__":
 
     api = DbApi()
     # res = api.select_files_and_output(location=(-31.95, 115.86, 0), distance_km=50)
-    res = api.get_photo_country()
+    # res = api.get_photo_country()
+    
+    res = api.find_photos_by_country_name('Russia')
     print(res)

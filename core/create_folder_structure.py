@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime as dt
 from typing import Any
 from pathlib import Path
 from shutil import copyfile
@@ -56,17 +55,19 @@ class Node:
         for f in fnames:
             children_data[str(f)]["folder"] = self.folder / str(f)
             children_data[str(f)]["conditions"] = self.conditions[1:]
-            if current_condition == "Y":
+            if current_condition == "C":
+                children_data[str(f)]["metadata"] = [i or "Unknown_country" for i in self.metadata if i.country == f]
+
+            elif current_condition == "Y":
                 children_data[str(f)]["metadata"] = [i for i in self.metadata if i.date.year == f]
-            elif current_condition == "m":
-                children_data[str(f)]["metadata"] = [i for i in self.metadata if i.date.month == f]
+            elif current_condition == "c":
+                children_data[str(f)]["metadata"] = [i or "Unknown_city" for i in self.metadata if i.city == f]
+
+
             elif current_condition == "d":
                 children_data[str(f)]["metadata"] = [i for i in self.metadata if i.date.day == f]
-            elif current_condition == "C":
-                children_data[str(f)]["metadata"] = [i if i else "Unknown_country" for i in self.metadata if i.country == f]
-            elif current_condition == "c":
-                children_data[str(f)]["metadata"] = [i if i else "Unknown_city" for i in self.metadata if i.city == f]
-
+            elif current_condition == "m":
+                children_data[str(f)]["metadata"] = [i for i in self.metadata if i.date.month == f]
         return [Node(**i) for i in children_data.values()]
 
 
@@ -112,7 +113,7 @@ def make_folder(path: Path, children: list[Path] = None) -> None:
         return make_folder(path.parent, children)
 
 
-def move_files(files: dict[Path, list[str]]):
+def populate_folder_structure(files: dict[Path, list[str | Path]]):
     for target_fol, original_files in files.items():
         for f in original_files:
             target_file = target_fol / Path(f).name
