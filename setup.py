@@ -16,6 +16,7 @@ setup(
     package_dir={'': 'src'},
     url='https://github.com/pavelcherepan/gisterical',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     keywords='example project',
         classifiers=[
         "Programming Language :: Python :: 3.9",
