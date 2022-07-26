@@ -4,17 +4,18 @@ import pathlib
 here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
-long_description = (here / "README.md").read_text(encoding="utf-8")
+long_description = (here / "readme.md").read_text(encoding="utf-8")
 
 setup(
     name='GISterical',
-    version='0.5.0',
+    version='0.5.1',
     license='MIT',
     author="Pavel Cherepanskiy",
     author_email='pavelcherepansky@gmail.com',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     url='https://github.com/pavelcherepan/gisterical',
+    long_description=long_description,
     keywords='example project',
         classifiers=[
         "Programming Language :: Python :: 3.9",
