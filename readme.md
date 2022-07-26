@@ -75,7 +75,7 @@ The first task is to run initial set-up of the image database and populate spati
 database. For this use `--setup` flag followed by `-i` or `--input` and the folder where photos 
 are located:
 ```
-python gisterical.py --setup -i /home/pav/Pictures
+gisterical --setup -i /home/pav/Pictures
 ```
 For my 15,000-file photo collection the setup takes about 1-2 minutes. The only other option
 that can be used during the initial set-up is whether or not to hash the images using `--hash` option. 
@@ -88,7 +88,7 @@ specifically need to deal with duplicates.
 
 New folders can be added at any time to the existing database using:
 ```
-python gisterical.py --add-folder -i <path_to_folder>
+gisterical --add-folder -i <path_to_folder>
 ```
 
 ## Sort photos
@@ -101,7 +101,7 @@ The command also needs to be followed by the output folder name where the new fi
 will be created using `-o` or `--output` options. The files are only ever copied to the new 
 location so the original files will never be affected. The full syntax of sorting command is:
 ```
-python gisterical.py --sort <sorting_flags> -o <output_folder>
+gisterical --sort <sorting_flags> -o <output_folder>
 ```
 
 Sorting by city is the most expensive operation since a complicated merge needs to be calculated 
@@ -114,7 +114,7 @@ between country and city of of origin in which case the best option is to reduce
 
 To sort with "nearest city" as one of the parameters:
 ```
-python gisterical.py --sort <sorting_flags> -o <output_folder> --distance 50
+gisterical --sort <sorting_flags> -o <output_folder> --distance 50
 ```
 
 Any photos missing geolocation information will be assigned to an "Unknown" city and "Unknown"
@@ -126,12 +126,12 @@ the script will locate all the relevant photos and output them to an `--output` 
 As is for sorting, to find by city, a distance parameter is required.
 For example,
 ```
-python gisterical.py --find-by-city Melbourne -o /home/Pictures/Melbourne_stuff --distance 50
+gisterical --find-by-city Melbourne -o /home/Pictures/Melbourne_stuff --distance 50
 ```
 
 To search by country of origin distance is not required:
 ```
-python gisterical.py --find-by-country Malaysia -o <output_folder>
+gisterical --find-by-country Malaysia -o <output_folder>
 ```
 
 
