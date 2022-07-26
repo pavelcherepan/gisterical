@@ -66,6 +66,10 @@ CREATE DATABASE <new_db_name> OWNER <new_user_name>;
 CREATE EXTENSION postgis;
 ```
 
+The last thing required is to update the `settings.json` file under `src/settings` in the install directory.
+Under the required categories enter the new user name, database name and the hostname so that the 
+script can correctly connect to the database.
+
 And now you should be ready to use the tool.
 
 # Usage

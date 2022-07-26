@@ -8,7 +8,7 @@ long_description = (here / "readme.md").read_text(encoding="utf-8")
 
 setup(
     name='GISterical',
-    version='0.5.1',
+    version='0.5.2',
     license='MIT',
     author="Pavel Cherepanskiy",
     author_email='pavelcherepansky@gmail.com',
