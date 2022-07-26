@@ -23,7 +23,7 @@ The full list of available flags is:
 
 The tool is very fast in comparison to most other photo managers I used and 3-level
 sorting of a 15,000 files and 40 Gb size photo collection including copying files to 
-the target location on a different physical drive takes approximately 3-4 minutes.
+the target location on a different physical drive takes approximately 5 minutes.
 
 
 # Initial setup 
@@ -70,16 +70,16 @@ And now you should be ready to use the tool.
 
 # Usage
 
-## Populated database
+## Populate database
 The first task is to run initial set-up of the image database and populate spatial data into the 
 database. For this use `--setup` flag followed by `-i` or `--input` and the folder where photos 
 are located:
 ```
 python gisterical.py --setup -i /home/pav/Pictures
 ```
-For my 15,000-file photo collection the setup takes about 40 seconds. The only other option
+For my 15,000-file photo collection the setup takes about 1-2 minutes. The only other option
 that can be used during the initial set-up is whether or not to hash the images using `--hash` option. 
-Hashing will allow you to identify duplicated images even when they've been cropped and resize. 
+Hashing will allow you to identify duplicated images even when they've been cropped or resized. 
 If hashing is enabled then perceptual and color hashes are calculated for each image using
 [Imagehash](https://pypi.org/project/ImageHash/) library.
 
@@ -116,6 +116,9 @@ To sort with "nearest city" as one of the parameters:
 ```
 python gisterical.py --sort <sorting_flags> -o <output_folder> --distance 50
 ```
+
+Any photos missing geolocation information will be assigned to an "Unknown" city and "Unknown"
+country.
 
 ## Find images
 The tool can additionally be used to locate images by country or nearest city. In this case

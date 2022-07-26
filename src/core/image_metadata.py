@@ -1,5 +1,6 @@
 import os
 import time
+import warnings
 import datetime as dt
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ from loguru import logger
 
 from core.image_paths import get_paths
 
+warnings.filterwarnings('ignore', module='exif')
 
 @define
 class PhotoData:
