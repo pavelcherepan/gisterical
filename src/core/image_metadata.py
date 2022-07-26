@@ -90,7 +90,7 @@ class MetadataExtractor:
     def metadata(self) -> list[PhotoData]:
         res: list[PhotoData] = []
         for cnt, (pth, dic) in enumerate(self._raw_metadata.items(), start=1):
-            logger.info(f"Processing image {cnt}/{len(self._raw_metadata)}")
+            # logger.info(f"Processing image {cnt}/{len(self._raw_metadata)}")
             try:
                 lat = self._convert_coords_to_decimal(dic['gps_latitude'], dic['gps_latitude_ref'])
                 lon = self._convert_coords_to_decimal(dic['gps_longitude'], dic['gps_longitude_ref'])

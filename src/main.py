@@ -32,6 +32,13 @@ parser.add_argument(
     required=False
 )
 parser.add_argument(
+    "--add-folder", 
+    action="store_true", 
+    help="Add photos to the database. Input folder has to be provided.",
+    default=False,
+    required=False
+)
+parser.add_argument(
     "--sort",
     action="store",
     type=str,
@@ -202,8 +209,14 @@ def main():
         out = _validate_search_inputs(args)
         paths = api.find_photos_by_country_name(args.find_by_country)
         copy_files(paths, out)       
-    logger.info(f'Successfully completed in {time() - t} seconds.')
-        
+    elif args.add_folder:
+        if not args.input and not args.i:
+            raise ValueError("Input folder must be provided.")
+        fol = args.input or args.i
+        p = get_paths([fol])
+        meta = MetadataExtractor(p, hash_images=args.hash)
+        api.add_photo_to_db(meta.metadata)
+    logger.info(f'Successfully completed in {time() - t} seconds.')        
 
 
 if __name__ == "__main__":
