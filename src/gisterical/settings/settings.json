@@ -1,8 +1,1 @@
-{
-    "database_name": "photo",
-    "user": "gis",
-    "password": "gis",
-    "hostname": "localhost",
-    "cities_data": "data/worldcities.csv",
-    "countries_data": "data/countries.geojson"
-}
+{"cities_data": "gisterical/data/worldcities.csv", "countries_data": "gisterical/data/countries.geojson", "database_name": "photo2", "user": "pav", "password": "pav", "hostname": "localhost"}

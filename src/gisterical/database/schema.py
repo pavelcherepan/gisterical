@@ -16,7 +16,7 @@ from sqlalchemy import (
     create_engine,
 )
 
-from settings.settings import load_settings
+from gisterical.settings.settings import load_settings
 
 SETTINGS = load_settings()
 
@@ -82,7 +82,7 @@ class City(Base):
 
 def populate_cities(session: sessionmaker):
     logger.info("Adding coordinates for world cities.")
-    cities = Path(SETTINGS.cities_data)
+    cities = Path().parent / SETTINGS.cities_data
     with open(cities, "r") as f:
         with session.begin() as sess:
             for idx, row in enumerate(f.readlines()):
@@ -124,7 +124,8 @@ def populate_cities(session: sessionmaker):
 
 def populate_countries(session: sessionmaker):
     logger.info("Adding country boundaries.")
-    with open(SETTINGS.countries_data) as f:
+    path = Path().parent / SETTINGS.countries_data
+    with open(path) as f:
         cnt = json.load(f)
     ft = cnt["features"]
     with session.begin() as sess:

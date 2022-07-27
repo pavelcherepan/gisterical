@@ -4,13 +4,13 @@ from pathlib import Path
 from loguru import logger
 from shutil import copyfile
 
-from core.image_metadata import MetadataExtractor
-from core.image_paths import get_paths
-from core.create_folder_structure import Node, traverse, populate_folder_structure, make_folder
-from database.db_api import DbApi
-from database.schema import create_schema
-from settings.settings import load_settings
-from util.file_meta import FileMeta
+from gisterical.core.image_metadata import MetadataExtractor
+from gisterical.core.image_paths import get_paths
+from gisterical.core.create_folder_structure import Node, traverse, populate_folder_structure, make_folder
+from gisterical.database.db_api import DbApi
+from gisterical.database.schema import create_schema
+from gisterical.settings.settings import load_settings, update_settings
+from gisterical.util.file_meta import FileMeta
 
 
 SETTINGS = load_settings()
@@ -24,6 +24,13 @@ inp = parser.add_mutually_exclusive_group(required=False)
 out = parser.add_mutually_exclusive_group(required=False)
 nam = parser.add_mutually_exclusive_group(required=False)
 
+parser.add_argument(
+    "--set-connection", 
+    action="store_true", 
+    help="Perform intial setup", 
+    default=False, 
+    required=False
+)
 parser.add_argument(
     "--setup", 
     action="store_true", 
@@ -197,7 +204,9 @@ def _validate_search_inputs(args: argparse.Namespace) -> Path:
         
 def main():   
     t = time() 
-    if args.setup and (args.input or args.i):
+    if args.set_connection:
+        update_settings()
+    elif args.setup and (args.input or args.i):
         perform_initial_setup(args.input or args.i)
     elif args.sort:
         run_sort_task(args)

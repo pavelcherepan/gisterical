@@ -7,10 +7,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-from database.schema import Image, Country, City
-from core.image_metadata import PhotoData
-from settings.settings import load_settings
-from util.file_meta import FileMeta
+from gisterical.database.schema import Image, Country, City
+from gisterical.core.image_metadata import PhotoData
+from gisterical.settings.settings import load_settings
+from gisterical.util.file_meta import FileMeta
 
 
 SETTINGS = load_settings()

@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import copyfile
 from dataclasses import dataclass, field
 
-from util.file_meta import FileMeta
+from gisterical.util import FileMeta
 
 
 def filter_year(data: list[FileMeta]) -> set[int]:
@@ -121,19 +121,19 @@ def populate_folder_structure(files: dict[Path, list[str | Path]]):
 
 
 if __name__ == "__main__":
-    
-    from database.db_api import DbApi
-    COND = ["Y", "m", ]
+    pass
+    # from database.db_api import DbApi
+    # COND = ["Y", "m", ]
 
-    api = DbApi()
-    d = api.get_photo_path_date()
+    # api = DbApi()
+    # d = api.get_photo_path_date()
     
-    n = Node(Path('temp'), metadata=d, conditions=COND)
+    # n = Node(Path('temp'), metadata=d, conditions=COND)
     
-    tree = traverse(n)
+    # tree = traverse(n)
     
-    for leaf in tree:
-        make_folder(leaf)
+    # for leaf in tree:
+    #     make_folder(leaf)
         
-    move_files(tree)
+    # move_files(tree)
 

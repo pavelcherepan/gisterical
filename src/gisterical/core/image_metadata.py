@@ -11,7 +11,7 @@ import imagehash as imh
 from attrs import define
 from loguru import logger
 
-from core.image_paths import get_paths
+from gisterical.core.image_paths import get_paths
 
 warnings.filterwarnings('ignore', module='exif')
 
