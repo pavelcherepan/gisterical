@@ -7,12 +7,17 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name='GISterical',
-    version='0.5.8.2',
+    version='0.5.8.19',
     license='MIT',
     author="Pavel Cherepanskiy",
     author_email='pavelcherepansky@gmail.com',
     packages=find_packages('src'),
-    package_dir={'': 'src'},
+    package_dir={
+        'gisterical': 'src/gisterical',
+        },
+    package_data={
+        'gisterical': ['data/countries.geojson', 'data/worldcities.csv']
+    },
     url='https://github.com/pavelcherepan/gisterical',
     long_description=long_description,
     long_description_content_type="text/markdown",

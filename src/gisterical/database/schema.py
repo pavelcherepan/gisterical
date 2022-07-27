@@ -82,7 +82,7 @@ class City(Base):
 
 def populate_cities(session: sessionmaker):
     logger.info("Adding coordinates for world cities.")
-    cities = Path().parent / SETTINGS.cities_data
+    cities = Path(__file__).parent.parent / SETTINGS.cities_data
     with open(cities, "r") as f:
         with session.begin() as sess:
             for idx, row in enumerate(f.readlines()):
@@ -124,7 +124,7 @@ def populate_cities(session: sessionmaker):
 
 def populate_countries(session: sessionmaker):
     logger.info("Adding country boundaries.")
-    path = Path().parent / SETTINGS.countries_data
+    path = Path(__file__).parent.parent / SETTINGS.countries_data
     with open(path) as f:
         cnt = json.load(f)
     ft = cnt["features"]
