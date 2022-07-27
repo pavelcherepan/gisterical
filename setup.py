@@ -3,12 +3,11 @@ import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
 
-# Get the long description from the README file
-long_description = (here / "readme.md").read_text(encoding="utf-8")
+long_description = (here / "README.md").read_text(encoding="utf-8")
 
 setup(
     name='GISterical',
-    version='0.5.2',
+    version='0.5.4',
     license='MIT',
     author="Pavel Cherepanskiy",
     author_email='pavelcherepansky@gmail.com',
@@ -36,7 +35,7 @@ setup(
       ],
     entry_points={
         "console_scripts": [
-            "gisterical=gisterical:gisterical",
+            "gisterical=gisterical:main",
         ],
     },
 )
